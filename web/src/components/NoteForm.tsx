@@ -29,31 +29,82 @@ export default function NoteForm({ onSubmit, loading }: Props) {
     setContent('')
   }
 
-  // Highlight tags in real-time
-  const getHighlightedContent = () => {
-    let html = content
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/#\w+/g, '<mark class="bg-yellow-600 text-slate-100 font-semibold rounded px-0.5">$&</mark>')
-    
-    return html
+  // Tokenize content for syntax highlighting
+  const tokenizeContent = (text: string) => {
+    const tokens: Array<{ type: 'tag' | 'text', value: string }> = []
+    const regex = /#\w+/g
+    let lastIndex = 0
+    let match
+
+    while ((match = regex.exec(text)) !== null) {
+      // Add text before tag
+      if (match.index > lastIndex) {
+        tokens.push({ type: 'text', value: text.slice(lastIndex, match.index) })
+      }
+      // Add tag
+      tokens.push({ type: 'tag', value: match[0] })
+      lastIndex = match.index + match[0].length
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      tokens.push({ type: 'text', value: text.slice(lastIndex) })
+    }
+
+    return tokens.length === 0 ? [{ type: 'text' as const, value: text }] : tokens
   }
+
+  const highlightedContent = tokenizeContent(content)
 
   return (
     <form onSubmit={handleSubmit} className="bg-slate-900 rounded-lg border border-slate-800 p-6 space-y-4 animate-fade-in">
-      <div className="relative">
-        {/* Hidden div for highlighting */}
-        <div className="absolute top-0 left-0 w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 pointer-events-none overflow-hidden whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: getHighlightedContent() }} />
-        
-        {/* Actual textarea on top */}
+      {/* Syntax highlighted display layer */}
+      <div className="relative rounded-lg overflow-hidden">
+        {/* Highlighted text display (background layer) */}
+        <pre className="absolute inset-0 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 pointer-events-none overflow-hidden whitespace-pre-wrap break-words m-0"
+          style={{
+            padding: '12px 16px',
+            fontSize: '14px',
+            lineHeight: '24px',
+            fontFamily: "'JetBrains Mono', 'Courier New', monospace"
+          }}
+        >
+          <code>
+            {highlightedContent.map((token, idx) =>
+              token.type === 'tag' ? (
+                <span key={idx} style={{
+                  backgroundColor: '#ca8a04',
+                  color: '#f1f5f9',
+                  fontWeight: '600',
+                  backgroundImage: 'linear-gradient(135deg, #ca8a04 0%, #b8860b 100%)'
+                }}>
+                  {token.value}
+                </span>
+              ) : (
+                <span key={idx}>{token.value}</span>
+              )
+            )}
+          </code>
+        </pre>
+
+        {/* Actual textarea (foreground layer) */}
         <textarea
           placeholder="What's on your mind? Use #tags inline like this..."
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={8}
-          className="relative w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-transparent caret-slate-100"
-          style={{ backgroundColor: 'transparent' }}
+          className="relative w-full resize-none font-mono"
+          style={{
+            padding: '12px 16px',
+            fontSize: '14px',
+            lineHeight: '24px',
+            backgroundColor: 'transparent',
+            color: 'transparent',
+            caretColor: '#e2e8f0',
+            border: 'none',
+            outline: 'none',
+            fontFamily: "'JetBrains Mono', 'Courier New', monospace"
+          }}
           required
           autoFocus
         />

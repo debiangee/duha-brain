@@ -48,8 +48,23 @@ export default function App() {
   const handleCreateNote = async (data: { title: string; content: string; type: NoteType; tags: string[] }) => {
     try {
       setLoading(true)
+      
+      // Wrap the initial content with a timestamp
+      const timestamp = new Date().toLocaleString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      })
+      
+      const contentWithTimestamp = `${timestamp}\n${data.content}`
+      
       const newNote = await api.createNote({
         ...data,
+        content: contentWithTimestamp,
         source: 'manual'
       })
       setToast({ message: '✓ Note saved', type: 'success' })
