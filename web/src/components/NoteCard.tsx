@@ -1,4 +1,5 @@
 import { Note } from '../types'
+import { getPreview } from '../utils/text'
 
 interface Props {
   note: Note
@@ -9,7 +10,7 @@ interface Props {
 }
 
 export default function NoteCard({ note, emoji, isSelected, onClick, onTagClick }: Props) {
-  const preview = note.content.substring(0, 80).replace(/\n/g, ' ')
+  const preview = getPreview(note.content, 80)
   const date = new Date(note.createdAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric'

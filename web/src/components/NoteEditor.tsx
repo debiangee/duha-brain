@@ -20,6 +20,8 @@ export default function NoteEditor({ note, onUpdate, loading }: Props) {
   const [editContent, setEditContent] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editingTitle, setEditingTitle] = useState(note.title)
 
   // Parse content into timestamped entries - parse by timestamp lines
   const entries = useMemo(() => {
@@ -187,10 +189,84 @@ export default function NoteEditor({ note, onUpdate, loading }: Props) {
     }
   }
 
+  const handleSaveTitle = async () => {
+    if (!editingTitle.trim()) {
+      setEditingTitle(note.title)
+      setIsEditingTitle(false)
+      return
+    }
+
+    if (editingTitle === note.title) {
+      setIsEditingTitle(false)
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const updated = await api.updateNote(note.id, {
+        title: editingTitle,
+        content: note.content,
+        type: note.type,
+        tags: note.tags,
+        source: note.source
+      })
+      
+      onUpdate(updated)
+      setIsEditingTitle(false)
+    } catch (err) {
+      console.error('Failed to save title:', err)
+      alert('Failed to save title')
+      setEditingTitle(note.title)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   if (isAddingNew) {
     return (
       <div className="p-8 max-w-4xl animate-fade-in">
-        <h2 className="text-3xl font-bold text-slate-100 mb-6">{note.title}</h2>
+        {isEditingTitle ? (
+          <div className="flex gap-2 mb-6">
+            <input
+              type="text"
+              value={editingTitle}
+              onChange={(e) => setEditingTitle(e.target.value)}
+              className="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-semibold text-2xl"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveTitle()
+                if (e.key === 'Escape') {
+                  setEditingTitle(note.title)
+                  setIsEditingTitle(false)
+                }
+              }}
+            />
+            <button
+              onClick={handleSaveTitle}
+              disabled={isSaving}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transform hover:scale-105 active:scale-95 transition-all duration-200"
+            >
+              ✓
+            </button>
+            <button
+              onClick={() => {
+                setEditingTitle(note.title)
+                setIsEditingTitle(false)
+              }}
+              className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700 transform hover:scale-105 active:scale-95 transition-all duration-200"
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <h2
+            onClick={() => setIsEditingTitle(true)}
+            className="text-3xl font-bold text-slate-100 mb-6 cursor-pointer hover:text-blue-400 transition-colors duration-200"
+            title="Click to edit title"
+          >
+            {note.title}
+          </h2>
+        )}
 
         <textarea
           value={newEntryContent}
@@ -222,7 +298,48 @@ export default function NoteEditor({ note, onUpdate, loading }: Props) {
   if (editingIndex !== null) {
     return (
       <div className="p-8 max-w-4xl animate-fade-in">
-        <h2 className="text-3xl font-bold text-slate-100 mb-2">{note.title}</h2>
+        {isEditingTitle ? (
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              value={editingTitle}
+              onChange={(e) => setEditingTitle(e.target.value)}
+              className="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-semibold text-2xl"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveTitle()
+                if (e.key === 'Escape') {
+                  setEditingTitle(note.title)
+                  setIsEditingTitle(false)
+                }
+              }}
+            />
+            <button
+              onClick={handleSaveTitle}
+              disabled={isSaving}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transform hover:scale-105 active:scale-95 transition-all duration-200"
+            >
+              ✓
+            </button>
+            <button
+              onClick={() => {
+                setEditingTitle(note.title)
+                setIsEditingTitle(false)
+              }}
+              className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700 transform hover:scale-105 active:scale-95 transition-all duration-200"
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <h2
+            onClick={() => setIsEditingTitle(true)}
+            className="text-3xl font-bold text-slate-100 mb-2 cursor-pointer hover:text-blue-400 transition-colors duration-200"
+            title="Click to edit title"
+          >
+            {note.title}
+          </h2>
+        )}
         <div className="text-sm text-slate-400 mb-6">Editing: {entries[editingIndex].timestamp}</div>
 
         <textarea
@@ -255,8 +372,49 @@ export default function NoteEditor({ note, onUpdate, loading }: Props) {
   return (
     <div className="p-8 max-w-4xl animate-fade-in">
       <div className="mb-8 flex items-start justify-between">
-        <div>
-          <h2 className="text-3xl font-bold text-slate-100 mb-2">{note.title}</h2>
+        <div className="flex-1">
+          {isEditingTitle ? (
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={editingTitle}
+                onChange={(e) => setEditingTitle(e.target.value)}
+                className="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-semibold text-2xl"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveTitle()
+                  if (e.key === 'Escape') {
+                    setEditingTitle(note.title)
+                    setIsEditingTitle(false)
+                  }
+                }}
+              />
+              <button
+                onClick={handleSaveTitle}
+                disabled={isSaving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transform hover:scale-105 active:scale-95 transition-all duration-200"
+              >
+                ✓
+              </button>
+              <button
+                onClick={() => {
+                  setEditingTitle(note.title)
+                  setIsEditingTitle(false)
+                }}
+                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700 transform hover:scale-105 active:scale-95 transition-all duration-200"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <h2
+              onClick={() => setIsEditingTitle(true)}
+              className="text-3xl font-bold text-slate-100 mb-2 cursor-pointer hover:text-blue-400 transition-colors duration-200"
+              title="Click to edit title"
+            >
+              {note.title}
+            </h2>
+          )}
           <div className="flex gap-4 text-sm text-slate-400">
             <span>📅 Created: {new Date(note.createdAt).toLocaleString()}</span>
           </div>

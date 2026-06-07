@@ -71,6 +71,43 @@ func (db *DB) initSchema() error {
 	CREATE INDEX IF NOT EXISTS idx_created_at ON notes(created_at);
 	CREATE INDEX IF NOT EXISTS idx_status ON notes(status);
 	CREATE INDEX IF NOT EXISTS idx_source ON notes(source);
+
+	CREATE TABLE IF NOT EXISTS feeds (
+		id TEXT PRIMARY KEY,
+		title TEXT NOT NULL,
+		url TEXT NOT NULL UNIQUE,
+		description TEXT,
+		last_fetched DATETIME,
+		fetch_error TEXT,
+		is_active BOOLEAN DEFAULT 1,
+		created_at DATETIME NOT NULL,
+		updated_at DATETIME NOT NULL
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_feed_url ON feeds(url);
+	CREATE INDEX IF NOT EXISTS idx_feed_active ON feeds(is_active);
+	CREATE INDEX IF NOT EXISTS idx_feed_last_fetched ON feeds(last_fetched);
+
+	CREATE TABLE IF NOT EXISTS feed_items (
+		id TEXT PRIMARY KEY,
+		feed_id TEXT NOT NULL,
+		title TEXT NOT NULL,
+		link TEXT NOT NULL UNIQUE,
+		description TEXT,
+		content TEXT,
+		pub_date DATETIME,
+		guid TEXT,
+		is_saved BOOLEAN DEFAULT 0,
+		saved_note_id TEXT,
+		fetched_at DATETIME NOT NULL,
+		FOREIGN KEY (feed_id) REFERENCES feeds(id) ON DELETE CASCADE,
+		FOREIGN KEY (saved_note_id) REFERENCES notes(id) ON DELETE SET NULL
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_feed_items_feed ON feed_items(feed_id);
+	CREATE INDEX IF NOT EXISTS idx_feed_items_saved ON feed_items(is_saved);
+	CREATE INDEX IF NOT EXISTS idx_feed_items_pub_date ON feed_items(pub_date);
+	CREATE INDEX IF NOT EXISTS idx_feed_items_fetched ON feed_items(fetched_at);
 	`
 
 	if _, err := db.conn.Exec(schema); err != nil {

@@ -1,6 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { getPreview } from '../utils/text';
 export default function NoteCard({ note, emoji, isSelected, onClick, onTagClick }) {
-    const preview = note.content.substring(0, 80).replace(/\n/g, ' ');
+    const preview = getPreview(note.content, 80);
     const date = new Date(note.createdAt).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric'

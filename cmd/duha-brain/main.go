@@ -10,6 +10,7 @@ import (
 	"github.com/cheenee/duha-brain/internal/api"
 	"github.com/cheenee/duha-brain/internal/config"
 	"github.com/cheenee/duha-brain/internal/database"
+	"github.com/cheenee/duha-brain/internal/services"
 	"github.com/cheenee/duha-brain/internal/storage"
 	"github.com/cheenee/duha-brain/internal/utils"
 	"github.com/labstack/echo/v4"
@@ -40,17 +41,22 @@ func main() {
 
 	// Initialize storage
 	noteStore := storage.NewNoteStore(db.GetConn())
+	feedStore := storage.NewFeedStore(db.GetConn())
+
+	// Initialize services
+	feedParser := services.NewFeedParser()
 
 	// Initialize Echo
 	e := echo.New()
 	e.Use(middleware.CORS())
 	e.Use(middleware.Recover())
 
-	// Initialize handler
+	// Initialize handlers
 	handler := api.NewHandler(noteStore, logger)
+	feedHandler := api.NewFeedHandler(feedStore, noteStore, feedParser)
 
 	// Register API routes
-	api.RegisterRoutes(e, handler, logger)
+	api.RegisterRoutes(e, handler, feedHandler, logger)
 
 	// Get the working directory
 	wd, err := os.Getwd()
@@ -83,6 +89,9 @@ func main() {
 
 	// Serve all static files from dist directory
 	e.Static("", distPath)
+
+	// Serve uploaded images
+	e.Static("/data/images", "data/images")
 
 	// Server address
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)

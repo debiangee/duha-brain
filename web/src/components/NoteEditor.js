@@ -8,6 +8,8 @@ export default function NoteEditor({ note, onUpdate, loading }) {
     const [editContent, setEditContent] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [editingTitle, setEditingTitle] = useState(note.title);
     // Parse content into timestamped entries - parse by timestamp lines
     const entries = useMemo(() => {
         if (!note.content.trim())
@@ -164,13 +166,74 @@ export default function NoteEditor({ note, onUpdate, loading }) {
             setIsDeleting(false);
         }
     };
+    const handleSaveTitle = async () => {
+        if (!editingTitle.trim()) {
+            setEditingTitle(note.title);
+            setIsEditingTitle(false);
+            return;
+        }
+        if (editingTitle === note.title) {
+            setIsEditingTitle(false);
+            return;
+        }
+        setIsSaving(true);
+        try {
+            const updated = await api.updateNote(note.id, {
+                title: editingTitle,
+                content: note.content,
+                type: note.type,
+                tags: note.tags,
+                source: note.source
+            });
+            onUpdate(updated);
+            setIsEditingTitle(false);
+        }
+        catch (err) {
+            console.error('Failed to save title:', err);
+            alert('Failed to save title');
+            setEditingTitle(note.title);
+        }
+        finally {
+            setIsSaving(false);
+        }
+    };
     if (isAddingNew) {
-        return (_jsxs("div", { className: "p-8 max-w-4xl animate-fade-in", children: [_jsx("h2", { className: "text-3xl font-bold text-slate-100 mb-6", children: note.title }), _jsx("textarea", { value: newEntryContent, onChange: (e) => setNewEntryContent(e.target.value), className: "w-full h-64 bg-slate-800 rounded-lg p-4 border border-slate-700 text-slate-200 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none", placeholder: "Add your entry...", autoFocus: true }), _jsxs("div", { className: "flex gap-2 mt-6", children: [_jsx("button", { onClick: handleAddEntry, disabled: isSaving || loading, className: "px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transform hover:scale-105 active:scale-95 transition-all duration-200", children: isSaving ? 'Saving...' : 'Save Entry' }), _jsx("button", { onClick: () => { setIsAddingNew(false); setNewEntryContent(''); }, className: "px-6 py-2 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700 transform hover:scale-105 active:scale-95 transition-all duration-200", children: "Cancel" })] })] }));
+        return (_jsxs("div", { className: "p-8 max-w-4xl animate-fade-in", children: [isEditingTitle ? (_jsxs("div", { className: "flex gap-2 mb-6", children: [_jsx("input", { type: "text", value: editingTitle, onChange: (e) => setEditingTitle(e.target.value), className: "flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-semibold text-2xl", autoFocus: true, onKeyDown: (e) => {
+                                if (e.key === 'Enter')
+                                    handleSaveTitle();
+                                if (e.key === 'Escape') {
+                                    setEditingTitle(note.title);
+                                    setIsEditingTitle(false);
+                                }
+                            } }), _jsx("button", { onClick: handleSaveTitle, disabled: isSaving, className: "px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transform hover:scale-105 active:scale-95 transition-all duration-200", children: "\u2713" }), _jsx("button", { onClick: () => {
+                                setEditingTitle(note.title);
+                                setIsEditingTitle(false);
+                            }, className: "px-4 py-2 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700 transform hover:scale-105 active:scale-95 transition-all duration-200", children: "\u2715" })] })) : (_jsx("h2", { onClick: () => setIsEditingTitle(true), className: "text-3xl font-bold text-slate-100 mb-6 cursor-pointer hover:text-blue-400 transition-colors duration-200", title: "Click to edit title", children: note.title })), _jsx("textarea", { value: newEntryContent, onChange: (e) => setNewEntryContent(e.target.value), className: "w-full h-64 bg-slate-800 rounded-lg p-4 border border-slate-700 text-slate-200 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none", placeholder: "Add your entry...", autoFocus: true }), _jsxs("div", { className: "flex gap-2 mt-6", children: [_jsx("button", { onClick: handleAddEntry, disabled: isSaving || loading, className: "px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transform hover:scale-105 active:scale-95 transition-all duration-200", children: isSaving ? 'Saving...' : 'Save Entry' }), _jsx("button", { onClick: () => { setIsAddingNew(false); setNewEntryContent(''); }, className: "px-6 py-2 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700 transform hover:scale-105 active:scale-95 transition-all duration-200", children: "Cancel" })] })] }));
     }
     if (editingIndex !== null) {
-        return (_jsxs("div", { className: "p-8 max-w-4xl animate-fade-in", children: [_jsx("h2", { className: "text-3xl font-bold text-slate-100 mb-2", children: note.title }), _jsxs("div", { className: "text-sm text-slate-400 mb-6", children: ["Editing: ", entries[editingIndex].timestamp] }), _jsx("textarea", { value: editContent, onChange: (e) => setEditContent(e.target.value), className: "w-full h-64 bg-slate-800 rounded-lg p-4 border border-slate-700 text-slate-200 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none", placeholder: "Edit entry...", autoFocus: true }), _jsxs("div", { className: "flex gap-2 mt-6", children: [_jsx("button", { onClick: () => handleSaveEdit(editingIndex), disabled: isSaving || loading, className: "px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transform hover:scale-105 active:scale-95 transition-all duration-200", children: isSaving ? 'Saving...' : 'Save Changes' }), _jsx("button", { onClick: () => { setEditingIndex(null); setEditContent(''); }, className: "px-6 py-2 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700 transform hover:scale-105 active:scale-95 transition-all duration-200", children: "Cancel" })] })] }));
+        return (_jsxs("div", { className: "p-8 max-w-4xl animate-fade-in", children: [isEditingTitle ? (_jsxs("div", { className: "flex gap-2 mb-2", children: [_jsx("input", { type: "text", value: editingTitle, onChange: (e) => setEditingTitle(e.target.value), className: "flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-semibold text-2xl", autoFocus: true, onKeyDown: (e) => {
+                                if (e.key === 'Enter')
+                                    handleSaveTitle();
+                                if (e.key === 'Escape') {
+                                    setEditingTitle(note.title);
+                                    setIsEditingTitle(false);
+                                }
+                            } }), _jsx("button", { onClick: handleSaveTitle, disabled: isSaving, className: "px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transform hover:scale-105 active:scale-95 transition-all duration-200", children: "\u2713" }), _jsx("button", { onClick: () => {
+                                setEditingTitle(note.title);
+                                setIsEditingTitle(false);
+                            }, className: "px-4 py-2 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700 transform hover:scale-105 active:scale-95 transition-all duration-200", children: "\u2715" })] })) : (_jsx("h2", { onClick: () => setIsEditingTitle(true), className: "text-3xl font-bold text-slate-100 mb-2 cursor-pointer hover:text-blue-400 transition-colors duration-200", title: "Click to edit title", children: note.title })), _jsxs("div", { className: "text-sm text-slate-400 mb-6", children: ["Editing: ", entries[editingIndex].timestamp] }), _jsx("textarea", { value: editContent, onChange: (e) => setEditContent(e.target.value), className: "w-full h-64 bg-slate-800 rounded-lg p-4 border border-slate-700 text-slate-200 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none", placeholder: "Edit entry...", autoFocus: true }), _jsxs("div", { className: "flex gap-2 mt-6", children: [_jsx("button", { onClick: () => handleSaveEdit(editingIndex), disabled: isSaving || loading, className: "px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transform hover:scale-105 active:scale-95 transition-all duration-200", children: isSaving ? 'Saving...' : 'Save Changes' }), _jsx("button", { onClick: () => { setEditingIndex(null); setEditContent(''); }, className: "px-6 py-2 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700 transform hover:scale-105 active:scale-95 transition-all duration-200", children: "Cancel" })] })] }));
     }
-    return (_jsxs("div", { className: "p-8 max-w-4xl animate-fade-in", children: [_jsxs("div", { className: "mb-8 flex items-start justify-between", children: [_jsxs("div", { children: [_jsx("h2", { className: "text-3xl font-bold text-slate-100 mb-2", children: note.title }), _jsx("div", { className: "flex gap-4 text-sm text-slate-400", children: _jsxs("span", { children: ["\uD83D\uDCC5 Created: ", new Date(note.createdAt).toLocaleString()] }) })] }), _jsxs("div", { className: "flex gap-2", children: [_jsx("button", { onClick: () => setIsAddingNew(true), className: "px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 font-semibold transform hover:scale-105 active:scale-95 transition-all duration-200", children: "+ New" }), _jsx("button", { onClick: handleDeleteNote, disabled: isDeleting, className: "px-4 py-2 bg-red-900 text-red-200 rounded-lg hover:bg-red-800 font-semibold transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:opacity-50", title: "Delete entire note", children: isDeleting ? 'Deleting...' : '🗑️' })] })] }), _jsx("div", { className: "space-y-6", children: entries.length === 0 ? (_jsx("div", { className: "text-slate-500 text-center py-8", children: _jsx("p", { children: "No entries yet. Click \"+ Add Entry\" to start." }) })) : (entries.map((entry, idx) => {
+    return (_jsxs("div", { className: "p-8 max-w-4xl animate-fade-in", children: [_jsxs("div", { className: "mb-8 flex items-start justify-between", children: [_jsxs("div", { className: "flex-1", children: [isEditingTitle ? (_jsxs("div", { className: "flex gap-2 mb-4", children: [_jsx("input", { type: "text", value: editingTitle, onChange: (e) => setEditingTitle(e.target.value), className: "flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-semibold text-2xl", autoFocus: true, onKeyDown: (e) => {
+                                            if (e.key === 'Enter')
+                                                handleSaveTitle();
+                                            if (e.key === 'Escape') {
+                                                setEditingTitle(note.title);
+                                                setIsEditingTitle(false);
+                                            }
+                                        } }), _jsx("button", { onClick: handleSaveTitle, disabled: isSaving, className: "px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transform hover:scale-105 active:scale-95 transition-all duration-200", children: "\u2713" }), _jsx("button", { onClick: () => {
+                                            setEditingTitle(note.title);
+                                            setIsEditingTitle(false);
+                                        }, className: "px-4 py-2 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700 transform hover:scale-105 active:scale-95 transition-all duration-200", children: "\u2715" })] })) : (_jsx("h2", { onClick: () => setIsEditingTitle(true), className: "text-3xl font-bold text-slate-100 mb-2 cursor-pointer hover:text-blue-400 transition-colors duration-200", title: "Click to edit title", children: note.title })), _jsx("div", { className: "flex gap-4 text-sm text-slate-400", children: _jsxs("span", { children: ["\uD83D\uDCC5 Created: ", new Date(note.createdAt).toLocaleString()] }) })] }), _jsxs("div", { className: "flex gap-2", children: [_jsx("button", { onClick: () => setIsAddingNew(true), className: "px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 font-semibold transform hover:scale-105 active:scale-95 transition-all duration-200", children: "+ New" }), _jsx("button", { onClick: handleDeleteNote, disabled: isDeleting, className: "px-4 py-2 bg-red-900 text-red-200 rounded-lg hover:bg-red-800 font-semibold transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:opacity-50", title: "Delete entire note", children: isDeleting ? 'Deleting...' : '🗑️' })] })] }), _jsx("div", { className: "space-y-6", children: entries.length === 0 ? (_jsx("div", { className: "text-slate-500 text-center py-8", children: _jsx("p", { children: "No entries yet. Click \"+ Add Entry\" to start." }) })) : (entries.map((entry, idx) => {
                     // Highlight tags in content
                     let highlightedContent = entry.content;
                     if (note.tags && note.tags.length > 0) {

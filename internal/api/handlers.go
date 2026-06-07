@@ -2,7 +2,10 @@ package api
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"io"
 
 	"github.com/cheenee/duha-brain/internal/models"
 	"github.com/cheenee/duha-brain/internal/storage"
@@ -132,6 +135,59 @@ func (h *Handler) Health(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{
 		"status": "ok",
 		"service": "duha-brain",
+	})
+}
+
+// UploadImage handles POST /images for uploading note images
+func (h *Handler) UploadImage(c echo.Context) error {
+	file, err := c.FormFile("image")
+	if err != nil {
+		h.logger.Warn("Image upload error", err.Error())
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "No image provided"})
+	}
+
+	// Create uploads directory if it doesn't exist
+	uploadDir := "data/images"
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		h.logger.Error("Failed to create upload directory", err.Error())
+		return c.JSON(http.StatusInternalServerError, utils.ErrInternalServer)
+	}
+
+	// Generate unique filename
+	filename := filepath.Base(file.Filename)
+	if filename == "" || filename == "." {
+		filename = "image.png"
+	}
+	
+	// Add timestamp to filename to avoid collisions
+	filepath := filepath.Join(uploadDir, filename)
+
+	// Open uploaded file
+	src, err := file.Open()
+	if err != nil {
+		h.logger.Error("Failed to open uploaded file", err.Error())
+		return c.JSON(http.StatusInternalServerError, utils.ErrInternalServer)
+	}
+	defer src.Close()
+
+	// Create destination file
+	dst, err := os.Create(filepath)
+	if err != nil {
+		h.logger.Error("Failed to create file", err.Error())
+		return c.JSON(http.StatusInternalServerError, utils.ErrInternalServer)
+	}
+	defer dst.Close()
+
+	// Copy file
+	if _, err := io.Copy(dst, src); err != nil {
+		h.logger.Error("Failed to copy file", err.Error())
+		return c.JSON(http.StatusInternalServerError, utils.ErrInternalServer)
+	}
+
+	// Return the URL path
+	h.logger.Info("Image uploaded", "filename", filename)
+	return c.JSON(http.StatusOK, map[string]string{
+		"url": "/" + filepath,
 	})
 }
 

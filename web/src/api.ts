@@ -55,5 +55,70 @@ export const api = {
   async deleteNote(id: string): Promise<void> {
     const res = await fetch(`${API_BASE}/notes/${id}`, { method: 'DELETE' })
     if (!res.ok) throw new Error('Failed to delete note')
+  },
+
+  async uploadImage(file: File): Promise<string> {
+    const formData = new FormData()
+    formData.append('image', file)
+    
+    const res = await fetch(`${API_BASE}/images`, {
+      method: 'POST',
+      body: formData
+    })
+    if (!res.ok) throw new Error('Failed to upload image')
+    const data = await res.json()
+    return data.url
+  },
+
+  // Feed endpoints
+  async addFeed(url: string) {
+    const res = await fetch(`${API_BASE}/feeds`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    })
+    if (!res.ok) throw new Error('Failed to add feed')
+    return res.json()
+  },
+
+  async getFeeds() {
+    const res = await fetch(`${API_BASE}/feeds`)
+    if (!res.ok) throw new Error('Failed to get feeds')
+    return res.json()
+  },
+
+  async getFeedItems(feedId: string, limit = 50) {
+    const res = await fetch(`${API_BASE}/feeds/${feedId}/items?limit=${limit}`)
+    if (!res.ok) throw new Error('Failed to get feed items')
+    return res.json()
+  },
+
+  async getRecentFeedItems(limit = 100) {
+    const res = await fetch(`${API_BASE}/feeds/items?limit=${limit}`)
+    if (!res.ok) throw new Error('Failed to get recent items')
+    return res.json()
+  },
+
+  async saveFeedItem(itemId: string, notebookId?: string) {
+    const res = await fetch(`${API_BASE}/feeds/items/${itemId}/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notebookId: notebookId || null })
+    })
+    if (!res.ok) throw new Error('Failed to save feed item')
+    return res.json()
+  },
+
+  async refreshFeed(feedId: string) {
+    const res = await fetch(`${API_BASE}/feeds/${feedId}/refresh`, {
+      method: 'POST'
+    })
+    if (!res.ok) throw new Error('Failed to refresh feed')
+    return res.json()
+  },
+
+  async deleteFeed(feedId: string) {
+    const res = await fetch(`${API_BASE}/feeds/${feedId}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('Failed to delete feed')
   }
 }
